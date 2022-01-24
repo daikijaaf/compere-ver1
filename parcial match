@@ -1,0 +1,115 @@
+// 設定                   
+const KEYWORD_SHEET_ID = "1_AnXuXkwP7HokRbcn4XxforzXJAHozSU9A6kEonslbM"  // 検索キーワードのシートID
+const SEARCH_KEYWORD_SHEET_NAME = "NewBrandList"                         // 検索キーワードのシート名
+const TARGET_SHEET_ID = "1eAiz-t_DQpwd5QQs_--LAH_haLoUyG8GnVdmc23x9wc"   // 検索対象データのシートID
+const SEARCH_TARGET_SHEET_NAME = "1.1"                          // 検索対象データのシート名
+const SEARCH_TARGET_ROW = 10       // A列=1,B列=2,...,H列=8,..
+const SERACH_RESULT_ROW = 11       // I列=9
+const SEARCH_SIZE = 100000       // 一度に読み込む検索対象データ数
+let match_num = 0 //1189件あるはず
+let nomatch_num = 0
+// main処理
+function main() {
+  console.info("処理開始")
+  // 検索キーワード取得
+  AAA_brand = get_keyword_from_sheet()
+  // 検索対象データのサイズを取得
+  target_data_max_row = get_target_data_max_row()
+  // 10000件づつAAA判定処理を行う(2行目から処理開始)
+  for (let start_row=2;start_row <= target_data_max_row;start_row=start_row+SEARCH_SIZE+1) {
+    console.info("検索開始:",start_row , "~")
+    // 検索対象データを10000件読み込む
+    let [check_data_array, read_end_flag] = read_target_data_from_sheet(start_row)
+    // 検索する
+    check_data_keyword_result_array = keyword_binary_search(check_data_array,AAA_brand)
+    // スプレッドシートに検索結果を保存する
+    output_search_result_to_sheet(start_row,check_data_keyword_result_array)
+    console.info("検索完了:",start_row , "~", check_data_keyword_result_array.length)
+    // 終了判定
+    if (read_end_flag) {
+      break
+    }
+  }
+    console.info("処理完了")
+    console.log("一致:",match_num)
+    console.log("一致なし:",nomatch_num)
+}
+
+// 
+function get_target_data_max_row() {
+   const max_row = SpreadsheetApp.openById(TARGET_SHEET_ID).getSheetByName(SEARCH_TARGET_SHEET_NAME).getLastRow()
+  return max_row
+}
+// キーワード読み込み
+function get_keyword_from_sheet() {
+ // スプレッドシート開く
+ const AAA_data_sheet = SpreadsheetApp.openById(KEYWORD_SHEET_ID).getSheetByName(SEARCH_KEYWORD_SHEET_NAME)
+ // 検索キーワードシート読み込み
+ const keyword_range = AAA_data_sheet.getRange(2,1,AAA_data_sheet.getLastRow(),1); // Sheetオブジェクト.getRange(行番号, 列番号, 行数, 列数)
+ const AAA_brand_temp = keyword_range.getValues().map(x => x[0]) // getValuesの戻り値が2階層配列になっているためmapで2階層配列に格納されている値のみ抽出する
+ const AAA_brand = AAA_brand_temp.filter(function(s){return s !== '';}); // 空文字のデータを除外する
+ AAA_brand.sort() // 二分探査するために検索対象のキーワードを昇順に並べ替える
+ return AAA_brand
+}
+
+// 検索対象データを読み込む
+function read_target_data_from_sheet(start_row) {
+  console.log("データ読み込み")
+ const TARGET_SHEET = SpreadsheetApp.openById(TARGET_SHEET_ID).getSheetByName(SEARCH_TARGET_SHEET_NAME)
+ let read_end_flag = false
+ let t_last_row = TARGET_SHEET.getLastRow()
+ let last_row = start_row + SEARCH_SIZE
+ if (last_row >= t_last_row) {
+   last_row = t_last_row
+   read_end_flag = true
+ }
+ const target_row_range = TARGET_SHEET.getRange(start_row,SEARCH_TARGET_ROW,last_row,1)
+ const check_data_array = target_row_range.getValues()
+ return [check_data_array, read_end_flag]
+}
+
+// キーワード判定する
+function keyword_binary_search(check_data_array,AAA_brand) {
+  console.log("キーワード判定")
+ // 各ターゲットデータにキーワードが含まれているかバイナリサーチ(二分探査)する
+ // https://www.youtube.com/watch?v=P3YID7liBug
+ let check_data_keyword_result_array = []
+ // 各検索対象データを取り出し、キーワード配列と比較する
+ for (let i = 0; i < check_data_array.length; ++i) {
+   check_data = check_data_array[i][0]
+   row = i + 1
+   match_result = false
+   match_brand_name = ""
+   for (let k_ind = 0; k_ind < AAA_brand.length; ++k_ind ) {
+     keyword = AAA_brand[k_ind]
+     // 一致した場合
+     if (check_data.indexOf(keyword)!= -1){
+       match_result = true
+       match_brand_name = keyword
+       break
+     }
+   }
+   if ( match_result === true ) {
+     // キーワードと一致した場合
+     check_data_keyword_result_array.push([match_brand_name]) // setValuesの仕様のため2次元配列で格納
+    //  console.info("match:",check_data, "->", match_brand_name)
+    match_num++
+   }else{
+     // キーワードと一致しなかった場合
+     check_data_keyword_result_array.push([""])  // setValuesの仕様のため2次元配列で格納
+     console.info("no match:",check_data)
+     nomatch_num++
+   }
+ }
+ return check_data_keyword_result_array
+}
+
+// 判定結果をスプレッドシートに保存する
+function output_search_result_to_sheet(start_row,check_data_keyword_result_array) {
+  console.log("スプレッドシート保存")
+   // キーワード一致結果をまとめてスプレッドシートに出力する
+  const TARGET_SHEET = SpreadsheetApp.openById(TARGET_SHEET_ID).getSheetByName(SEARCH_TARGET_SHEET_NAME)
+  result_output_row_range = TARGET_SHEET.getRange(start_row,SERACH_RESULT_ROW,check_data_keyword_result_array.length,1) // Sheetオブジェクト.getRange(行番号, 列番号, 行数, 列数)
+  result_output_row_range.setValues(check_data_keyword_result_array)
+}
+
