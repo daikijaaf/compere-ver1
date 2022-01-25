@@ -1,7 +1,5 @@
 import pandas as pd
-file_path = "/Users/daiki/Desktop/Pizza Hut& Starbucks SF Injection .xlsx"
-#df_leadgen_temp_uber_mask = df_leadgen_temp['Lead Data Origin'] == 'Gracei_UberEats'
-#df_leadgen = df_leadgen_temp[df_leadgen_temp_uber_mask]
+file_path = "xxxx" file path 入力
 df_leadgen= pd.read_excel(file_path, sheet_name=0, index_col=0)
 df_uber = pd.read_excel(file_path, sheet_name=1)
 # print(df_leadgen.head)
