@@ -1,5 +1,5 @@
 import pandas as pd
-file_path = "xxxx" file path 入力
+file_path = "" #file path 入力
 df_leadgen= pd.read_excel(file_path, sheet_name=0, index_col=0)
 df_uber = pd.read_excel(file_path, sheet_name=1)
 # print(df_leadgen.head)
@@ -108,7 +108,7 @@ df_leadgen_af[df_leadgen_af['match_group'] != ""]
 
 
 # エクセルに出力
-df_leadgen_af.to_excel('test.xlsx', sheet_name='af_match')
+df_leadgen_af.to_excel('xxx', sheet_name='xxx')# add file & sheet name
 
 
 
